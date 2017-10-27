@@ -1,26 +1,27 @@
 package main
 
 import (
-	"os/exec"
-	"os"
-	"io/ioutil"
-	"gopkg.in/yaml.v2"
-	"log"
-	"strings"
 	"bufio"
 	"bytes"
-	"time"
+	"io/ioutil"
+	"log"
 	"net"
+	"os"
+	"os/exec"
+	"strings"
+	"time"
+
+	"gopkg.in/yaml.v2"
 )
 
 type config struct {
-	Mailfrom string `yaml:"mail_from"`
-	Mailfromname string `yaml:"mail_from_name"`
-	Mailsubject string `yaml:"mail_subject"`
-	Mailtos []string `yaml:"mail_to"`
+	Mailfrom         string   `yaml:"mail_from"`
+	Mailfromname     string   `yaml:"mail_from_name"`
+	Mailsubject      string   `yaml:"mail_subject"`
+	Mailtos          []string `yaml:"mail_to"`
 	Allowedaddresses []string `yaml:"allowed_addresses"`
-	Rechecktime int64 `yaml:"recheck_time"`
-	Gracetime int64 `yaml:"grace_time"`
+	Rechecktime      int64    `yaml:"recheck_time"`
+	Gracetime        int64    `yaml:"grace_time"`
 }
 
 func (c *config) getConfig(configfile string) *config {
@@ -47,10 +48,11 @@ func getWho() string {
 
 	args := []string{"-u"}
 
-	whoOut, execErr := exec.Command(who, args...).Output();
+	whoOut, execErr := exec.Command(who, args...).Output()
 	if execErr != nil {
 		panic(execErr)
 	}
+
 	return string(whoOut)
 }
 
@@ -73,6 +75,7 @@ func isNotAllowed(address string, allowedNetworks []string) bool {
 			}
 		}
 	}
+
 	return true
 }
 
@@ -84,7 +87,7 @@ func hostname() string {
 
 	args := []string{"-f"}
 
-	hostFqdn, execErr := exec.Command(hostname, args...).Output();
+	hostFqdn, execErr := exec.Command(hostname, args...).Output()
 	if execErr != nil {
 		panic(execErr)
 	}
@@ -108,7 +111,7 @@ func sendMail(recipient string, mailfrom string, mailfromname string, mailsubjec
 
 	args := []string{"-t", "-f", mailfrom, "-F", mailfromname, recipient}
 
-	sendmail := exec.Command(mail, args...);
+	sendmail := exec.Command(mail, args...)
 	sendmail.Stdin = strings.NewReader(sendmailBuffer.String())
 	execErr := sendmail.Run()
 	if execErr != nil {
@@ -116,13 +119,13 @@ func sendMail(recipient string, mailfrom string, mailfromname string, mailsubjec
 	}
 }
 
-func main () {
+func main() {
 	var (
 		config config
 	)
 
 	configfile := "./config.yml"
-	if  len(os.Args) > 1 {
+	if len(os.Args) > 1 {
 		arg := os.Args[1]
 		configfile = arg
 	}
@@ -151,14 +154,14 @@ func main () {
 			}
 
 			println(address)
-                        uniqeUser := username + address
+			uniqeUser := username + address
 
 			if isNotAllowed(address, allowedAddresses) {
 				sendmail := false
 
 				timeDetected := time.Now()
 				if timeLogged, ok := logged[uniqeUser]; ok {
-					if (timeDetected.Sub(timeLogged) > graceTime) {
+					if timeDetected.Sub(timeLogged) > graceTime {
 						logged[uniqeUser] = timeDetected
 						sendmail = true
 					}
