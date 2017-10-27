@@ -40,7 +40,6 @@ func (c *config) getConfig(configfile string) *config {
 }
 
 func getWho() string {
-
 	var (
 		whoOut []byte
 		execErr error
@@ -61,7 +60,6 @@ func getWho() string {
 }
 
 func isNotAllowed(address string, allowedNetworks []string) bool {
-
 	parsedAddress := net.ParseIP(address)
 	if parsedAddress == nil {
 		for _, allowedHostname := range allowedNetworks {
