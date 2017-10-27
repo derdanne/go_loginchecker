@@ -163,7 +163,6 @@ func main () {
                         uniqe_user := username + address
 
 			if isNotAllowed(address, allowedAddresses) {
-				mailBody := username + " is not allowed from " + address
 				sendmail := false
 
 				timeDetected := time.Now()
@@ -178,7 +177,8 @@ func main () {
 					sendmail = true
 				}
 
-				if sendmail == true {
+				if sendmail {
+					mailBody := username + " is not allowed from " + address
 					for _, alertMailto := range alertMailtos {
 						sendMail(alertMailto, mailFrom, mailFromName, mailSubject, mailBody)
 					}
