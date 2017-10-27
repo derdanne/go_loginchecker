@@ -146,6 +146,11 @@ func main () {
 			whoIsLoggedIn := strings.Fields(line)
 			username := whoIsLoggedIn[0]
 			address := strings.Trim(whoIsLoggedIn[6], "(,)")
+			if strings.Contains(address, ":S") {
+				address = string(strings.Split(address, ":")[0])
+			}
+
+			println(address)
                         uniqeUser := username + address
 
 			if isNotAllowed(address, allowedAddresses) {
