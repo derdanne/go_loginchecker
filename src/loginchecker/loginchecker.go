@@ -10,6 +10,7 @@ import (
 	"bufio"
 	"bytes"
 	"time"
+	"net"
 )
 
 type config struct {
@@ -59,10 +60,24 @@ func getWho() string {
 	return string(whoOut)
 }
 
-func isNotAllowed(address string, allowedAddresses []string) bool {
-	for _, allowedAddress := range allowedAddresses {
-		if allowedAddress == address {
-			return false
+func isNotAllowed(address string, allowedNetworks []string) bool {
+
+	parsedAddress := net.ParseIP(address)
+	if parsedAddress == nil {
+		for _, allowedHostname := range allowedNetworks {
+			if allowedHostname == address {
+				return false
+			}
+		}
+	} else {
+		for _, allowedNetwork := range allowedNetworks {
+			_, parsedAllowedNetworkCIDR, _ := net.ParseCIDR(allowedNetwork)
+			if parsedAllowedNetworkCIDR == nil {
+			} else {
+				if parsedAllowedNetworkCIDR.Contains(parsedAddress) {
+					return false
+				}
+			}
 		}
 	}
 	return true
