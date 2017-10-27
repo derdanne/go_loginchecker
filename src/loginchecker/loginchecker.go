@@ -14,13 +14,13 @@ import (
 )
 
 type config struct {
-	Mailfrom string `yaml:"mailfrom"`
-	Mailfromname string `yaml:"mailfromname"`
-	Mailsubject string `yaml:"mailsubject"`
-	Mailtos []string `yaml:"mailtos"`
-	Ipaddresses []string `yaml:"ipaddresses"`
-	Rechecktime int64 `yaml:"rechecktime"`
-	Gracetime int64 `yaml:"gracetime"`
+	Mailfrom string `yaml:"mail_from"`
+	Mailfromname string `yaml:"mail_from_name"`
+	Mailsubject string `yaml:"mail_subject"`
+	Mailtos []string `yaml:"mail_to"`
+	Allowedaddresses []string `yaml:"allowed_addresses"`
+	Rechecktime int64 `yaml:"recheck_time"`
+	Gracetime int64 `yaml:"grace_time"`
 }
 
 func (c *config) getConfig(configfile string) *config {
@@ -40,11 +40,6 @@ func (c *config) getConfig(configfile string) *config {
 }
 
 func getWho() string {
-	var (
-		whoOut []byte
-		execErr error
-	)
-
 	who, lookErr := exec.LookPath("who")
 	if lookErr != nil {
 		panic(lookErr)
@@ -52,7 +47,7 @@ func getWho() string {
 
 	args := []string{"-u"}
 
-	whoOut, execErr = exec.Command(who, args...).Output();
+	whoOut, execErr := exec.Command(who, args...).Output();
 	if execErr != nil {
 		panic(execErr)
 	}
@@ -89,20 +84,16 @@ func hostname() string {
 
 	args := []string{"-f"}
 
-	hostfqdn, execErr := exec.Command(hostname, args...).Output();
+	hostFqdn, execErr := exec.Command(hostname, args...).Output();
 	if execErr != nil {
 		panic(execErr)
 	}
 
-	return string(hostfqdn)
+	return string(hostFqdn)
 }
 
-
-
 func sendMail(recipient string, mailfrom string, mailfromname string, mailsubject string, mailbody string) {
-
 	var sendmailBuffer bytes.Buffer
-
 	sendmailBuffer.WriteString("Subject: ")
 	sendmailBuffer.WriteString(mailsubject)
 	sendmailBuffer.WriteString("\nLoginchecker triggered an alert\n")
@@ -121,15 +112,13 @@ func sendMail(recipient string, mailfrom string, mailfromname string, mailsubjec
 	sendmail.Stdin = strings.NewReader(sendmailBuffer.String())
 	execErr := sendmail.Run()
 	if execErr != nil {
-		log.Fatal(execErr)
+		panic(execErr)
 	}
 }
-
 
 func main () {
 	var (
 		config config
-		line string
 	)
 
 	configfile := "./config.yml"
@@ -139,16 +128,13 @@ func main () {
 	}
 
 	config.getConfig(configfile)
-
 	recheckTime := time.Duration(config.Rechecktime) * time.Second
 	graceTime := time.Duration(config.Gracetime) * time.Second
 	alertMailtos := config.Mailtos
-	allowedAddresses := config.Ipaddresses
+	allowedAddresses := config.Allowedaddresses
 	mailFrom := config.Mailfrom
 	mailFromName := config.Mailfromname
 	mailSubject := config.Mailsubject + " @ " + hostname()
-
-	println(mailFrom, mailFromName, mailSubject)
 
 	logged := make(map[string]time.Time)
 
@@ -156,24 +142,23 @@ func main () {
 		who := getWho()
 		scanner := bufio.NewScanner(strings.NewReader(who))
 		for scanner.Scan() {
-			line = scanner.Text()
+			line := scanner.Text()
 			whoIsLoggedIn := strings.Fields(line)
 			username := whoIsLoggedIn[0]
 			address := strings.Trim(whoIsLoggedIn[6], "(,)")
-                        uniqe_user := username + address
+                        uniqeUser := username + address
 
 			if isNotAllowed(address, allowedAddresses) {
 				sendmail := false
 
 				timeDetected := time.Now()
-				if timeLogged, ok := logged[uniqe_user]; ok {
+				if timeLogged, ok := logged[uniqeUser]; ok {
 					if (timeDetected.Sub(timeLogged) > graceTime) {
-						logged[uniqe_user] = timeDetected
+						logged[uniqeUser] = timeDetected
 						sendmail = true
 					}
-
 				} else {
-					logged[uniqe_user] = timeDetected
+					logged[uniqeUser] = timeDetected
 					sendmail = true
 				}
 
