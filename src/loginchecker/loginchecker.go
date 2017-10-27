@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"gopkg.in/yaml.v2"
+	"github.com/monochromegane/slack-incoming-webhooks"
 )
 
 type config struct {
@@ -22,7 +23,15 @@ type config struct {
 	Allowedaddresses []string `yaml:"allowed_addresses"`
 	Rechecktime      int64    `yaml:"recheck_time"`
 	Gracetime        int64    `yaml:"grace_time"`
+
+	Slackwebhookurl  string   `yaml:"slack_webhook_url,omitempty"`
+	Slackchannel	 string   `yaml:"slack_channel,omitempty"`
+	Slackauthor      string   `yaml:"slack_author,omitempty"`
+	Slackmessage     string   `yaml:"slack_message,omitempty"`
+	Slackusername    string   `yaml:"slack_username,omitempty"`
+	Slackiconemoji   string   `yaml:"slack_icon_emoji,omitempty"`
 }
+
 
 func (c *config) getConfig(configfile string) *config {
 	yamlFile, readErr := ioutil.ReadFile(configfile)
@@ -119,25 +128,56 @@ func sendMail(recipient string, mailfrom string, mailfromname string, mailsubjec
 	}
 }
 
+func sendSlack(webhookUrl string, channel string, author string, message string, username string, iconEmoji string) {
+	println(webhookUrl, channel, author, message, username, iconEmoji)
+	attachment1 := slack_incoming_webhooks.Attachment{}
+	attachment1.AddField( &slack_incoming_webhooks.Field {
+		Title: "Author",
+		Value: author,
+	})
+	attachment1.AddField( &slack_incoming_webhooks.Field {
+		Title: "Status",
+		Value: "Login Alert",
+	})
+
+	slack_incoming_webhooks.Client{
+		WebhookURL: webhookUrl,
+	}.Post((&slack_incoming_webhooks.Payload{
+		Text: message,
+		Channel: channel,
+		Username: username,
+		IconEmoji: iconEmoji,
+	}))
+}
+
 func main() {
 	var (
 		config config
 	)
+
+	hostName := hostname()
 
 	configfile := "./config.yml"
 	if len(os.Args) > 1 {
 		arg := os.Args[1]
 		configfile = arg
 	}
-
 	config.getConfig(configfile)
+
 	recheckTime := time.Duration(config.Rechecktime) * time.Second
 	graceTime := time.Duration(config.Gracetime) * time.Second
 	alertMailtos := config.Mailtos
 	allowedAddresses := config.Allowedaddresses
 	mailFrom := config.Mailfrom
 	mailFromName := config.Mailfromname
-	mailSubject := config.Mailsubject + " @ " + hostname()
+	mailSubject := config.Mailsubject + " @ " + hostName
+	slackWebhookUrl := config.Slackwebhookurl
+	slackChannel := config.Slackchannel
+	slackAuthor := config.Slackauthor
+	slackMessage := config.Slackmessage + " @ " + hostName
+	slackUsername := config.Slackusername
+	slackIconEmoji := config.Slackiconemoji
+
 
 	logged := make(map[string]time.Time)
 
@@ -157,24 +197,25 @@ func main() {
 			uniqeUser := username + address
 
 			if isNotAllowed(address, allowedAddresses) {
-				sendmail := false
+				notify := false
 
 				timeDetected := time.Now()
 				if timeLogged, ok := logged[uniqeUser]; ok {
 					if timeDetected.Sub(timeLogged) > graceTime {
 						logged[uniqeUser] = timeDetected
-						sendmail = true
+						notify = true
 					}
 				} else {
 					logged[uniqeUser] = timeDetected
-					sendmail = true
+					notify = true
 				}
 
-				if sendmail {
+				if notify {
 					mailBody := username + " is not allowed from " + address
 					for _, alertMailto := range alertMailtos {
 						sendMail(alertMailto, mailFrom, mailFromName, mailSubject, mailBody)
 					}
+					sendSlack(slackWebhookUrl, slackChannel, slackAuthor, slackMessage, slackUsername, slackIconEmoji)
 				}
 			}
 		}

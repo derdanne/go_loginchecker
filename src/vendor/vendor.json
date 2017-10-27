@@ -3,6 +3,12 @@
 	"ignore": "test",
 	"package": [
 		{
+			"checksumSHA1": "YBnQIMr/fl0qBrZEXyD8FelYo/0=",
+			"path": "github.com/monochromegane/slack-incoming-webhooks",
+			"revision": "86d1b9ab9a9450c03e86cbe9ee2d0f1bb2de3bbf",
+			"revisionTime": "2016-12-22T05:15:09Z"
+		},
+		{
 			"checksumSHA1": "RDJpJQwkF012L6m/2BJizyOksNw=",
 			"path": "gopkg.in/yaml.v2",
 			"revision": "eb3733d160e74a9c7e442f435eb3bea458e1d19f",
