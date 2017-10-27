@@ -1,0 +1,13 @@
+---
+mailfrom: "loginwatch@example.org"
+mailfromname: "Login Alert"
+mailsubject: "Not allowed login detected"
+mailtos:
+  - "alert@example.org"
+  - "sms@example.org"
+ipaddresses:
+  - "192.168.0.0/24"
+  - "192.168.2.0/24"
+  - "tty"
+rechecktime: 30
+gracetime: 1800
