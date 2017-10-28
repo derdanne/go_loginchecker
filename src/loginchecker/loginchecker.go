@@ -21,6 +21,7 @@ type config struct {
 	Mailsubject      string   `yaml:"mail_subject,omitempty"`
 	Mailtos          []string `yaml:"mail_to,omitempty"`
 	Allowedaddresses []string `yaml:"allowed_addresses,omitempty"`
+	Allowedusers     []string `yaml:"allowed_users,omitempty"`
 	Rechecktime      int64    `yaml:"recheck_time,omitempty"`
 	Gracetime        int64    `yaml:"grace_time,omitempty"`
 	Slackwebhookurl  string   `yaml:"slack_webhook_url,omitempty"`
@@ -63,7 +64,7 @@ func getWho() string {
 	return string(whoOut)
 }
 
-func isNotAllowed(address string, allowedNetworks []string) bool {
+func isNotAllowedIp(address string, allowedNetworks []string) bool {
 	parsedAddress := net.ParseIP(address)
 	if parsedAddress == nil {
 		for _, allowedHostname := range allowedNetworks {
@@ -86,6 +87,15 @@ func isNotAllowed(address string, allowedNetworks []string) bool {
 	return true
 }
 
+func isNotAllowedUser(user string, allowedUsers []string) bool {
+	for _, allowedUser := range allowedUsers {
+		if allowedUser == user {
+			return false
+		}
+	}
+	return true
+}
+
 func hostname() string {
 	hostname, lookErr := exec.LookPath("hostname")
 	if lookErr != nil {
@@ -99,7 +109,7 @@ func hostname() string {
 		panic(execErr)
 	}
 
-	return string(hostFqdn)
+	return strings.Trim(string(hostFqdn), "\n")
 }
 
 func sendMail(recipient string, mailfrom string, mailfromname string, mailsubject string, mailbody string) {
@@ -134,7 +144,7 @@ func sendSlack(webhookUrl string, channel string, author string, message string,
 	attachment := &slack_incoming_webhooks.Attachment{
 		AuthorName: author,
 		Text:       attachementMessage,
-		Color:      "red",
+		Color:      "danger",
 	}
 
 	payload := &slack_incoming_webhooks.Payload{
@@ -165,20 +175,6 @@ func main() {
 	}
 	config.getConfig(configfile)
 
-	recheckTime := time.Duration(config.Rechecktime) * time.Second
-	graceTime := time.Duration(config.Gracetime) * time.Second
-	alertMailtos := config.Mailtos
-	allowedAddresses := config.Allowedaddresses
-	mailFrom := config.Mailfrom
-	mailFromName := config.Mailfromname
-	mailSubject := config.Mailsubject + " @ " + hostName
-	slackWebhookUrl := config.Slackwebhookurl
-	slackChannel := config.Slackchannel
-	slackAuthor := config.Slackauthor
-	slackMessage := config.Slackmessage + " @ " + hostName
-	slackUsername := config.Slackusername
-	slackIconEmoji := config.Slackiconemoji
-
 	logged := make(map[string]time.Time)
 	for {
 		who := getWho()
@@ -194,12 +190,12 @@ func main() {
 
 			uniqeUser := username + address
 
-			if isNotAllowed(address, allowedAddresses) {
+			if isNotAllowedIp(address, config.Allowedaddresses) || isNotAllowedUser(username, config.Allowedusers) {
 				notify := false
 
 				timeDetected := time.Now()
 				if timeLogged, ok := logged[uniqeUser]; ok {
-					if timeDetected.Sub(timeLogged) > graceTime {
+					if timeDetected.Sub(timeLogged) > time.Duration(config.Gracetime) * time.Second {
 						logged[uniqeUser] = timeDetected
 						notify = true
 					}
@@ -209,14 +205,15 @@ func main() {
 				}
 
 				if notify {
-					message := username + " is not allowed from " + address
-					for _, alertMailto := range alertMailtos {
-						sendMail(alertMailto, mailFrom, mailFromName, mailSubject, message)
+					message := "Unauthorized access: User " + username + " is not allowed to access " + hostName + " from IP " + address + "!"
+					for _, alertMailto := range config.Mailtos {
+						sendMail(alertMailto, config.Mailfrom, config.Mailfromname, config.Mailsubject + " @ " + hostName, message)
 					}
-					sendSlack(slackWebhookUrl, slackChannel, slackAuthor, slackMessage, slackUsername, slackIconEmoji, message)
+					sendSlack(config.Slackwebhookurl, config.Slackchannel, config.Slackauthor, config.Slackmessage + " @ " + hostName, config.Slackusername, config.Slackiconemoji, message)
+					println(message)
 				}
 			}
 		}
-		time.Sleep(recheckTime)
+		time.Sleep(time.Duration(config.Rechecktime) * time.Second)
 	}
 }
