@@ -11,27 +11,25 @@ import (
 	"strings"
 	"time"
 
-	"gopkg.in/yaml.v2"
 	"github.com/monochromegane/slack-incoming-webhooks"
+	"gopkg.in/yaml.v2"
 )
 
 type config struct {
-	Mailfrom         string   `yaml:"mail_from"`
-	Mailfromname     string   `yaml:"mail_from_name"`
-	Mailsubject      string   `yaml:"mail_subject"`
-	Mailtos          []string `yaml:"mail_to"`
-	Allowedaddresses []string `yaml:"allowed_addresses"`
-	Rechecktime      int64    `yaml:"recheck_time"`
-	Gracetime        int64    `yaml:"grace_time"`
-
+	Mailfrom         string   `yaml:"mail_from,omitempty"`
+	Mailfromname     string   `yaml:"mail_from_name,omitempty"`
+	Mailsubject      string   `yaml:"mail_subject,omitempty"`
+	Mailtos          []string `yaml:"mail_to,omitempty"`
+	Allowedaddresses []string `yaml:"allowed_addresses,omitempty"`
+	Rechecktime      int64    `yaml:"recheck_time,omitempty"`
+	Gracetime        int64    `yaml:"grace_time,omitempty"`
 	Slackwebhookurl  string   `yaml:"slack_webhook_url,omitempty"`
-	Slackchannel	 string   `yaml:"slack_channel,omitempty"`
+	Slackchannel     string   `yaml:"slack_channel,omitempty"`
 	Slackauthor      string   `yaml:"slack_author,omitempty"`
 	Slackmessage     string   `yaml:"slack_message,omitempty"`
 	Slackusername    string   `yaml:"slack_username,omitempty"`
 	Slackiconemoji   string   `yaml:"slack_icon_emoji,omitempty"`
 }
-
 
 func (c *config) getConfig(configfile string) *config {
 	yamlFile, readErr := ioutil.ReadFile(configfile)
@@ -128,26 +126,29 @@ func sendMail(recipient string, mailfrom string, mailfromname string, mailsubjec
 	}
 }
 
-func sendSlack(webhookUrl string, channel string, author string, message string, username string, iconEmoji string) {
-	println(webhookUrl, channel, author, message, username, iconEmoji)
-	attachment1 := slack_incoming_webhooks.Attachment{}
-	attachment1.AddField( &slack_incoming_webhooks.Field {
-		Title: "Author",
-		Value: author,
-	})
-	attachment1.AddField( &slack_incoming_webhooks.Field {
-		Title: "Status",
-		Value: "Login Alert",
-	})
-
-	slack_incoming_webhooks.Client{
+func sendSlack(webhookUrl string, channel string, author string, message string, username string, iconEmoji string, attachementMessage string) {
+	client := &slack_incoming_webhooks.Client{
 		WebhookURL: webhookUrl,
-	}.Post((&slack_incoming_webhooks.Payload{
-		Text: message,
-		Channel: channel,
-		Username: username,
+	}
+
+	attachment := &slack_incoming_webhooks.Attachment{
+		AuthorName: author,
+		Text:       attachementMessage,
+		Color:      "red",
+	}
+
+	payload := &slack_incoming_webhooks.Payload{
+		Text:      message,
+		Channel:   channel,
+		Username:  username,
 		IconEmoji: iconEmoji,
-	}))
+	}
+	payload.AddAttachment(attachment)
+
+	execErr := client.Post(payload)
+	if execErr != nil {
+		panic(execErr)
+	}
 }
 
 func main() {
@@ -178,9 +179,7 @@ func main() {
 	slackUsername := config.Slackusername
 	slackIconEmoji := config.Slackiconemoji
 
-
 	logged := make(map[string]time.Time)
-
 	for {
 		who := getWho()
 		scanner := bufio.NewScanner(strings.NewReader(who))
@@ -193,7 +192,6 @@ func main() {
 				address = string(strings.Split(address, ":")[0])
 			}
 
-			println(address)
 			uniqeUser := username + address
 
 			if isNotAllowed(address, allowedAddresses) {
@@ -211,11 +209,11 @@ func main() {
 				}
 
 				if notify {
-					mailBody := username + " is not allowed from " + address
+					message := username + " is not allowed from " + address
 					for _, alertMailto := range alertMailtos {
-						sendMail(alertMailto, mailFrom, mailFromName, mailSubject, mailBody)
+						sendMail(alertMailto, mailFrom, mailFromName, mailSubject, message)
 					}
-					sendSlack(slackWebhookUrl, slackChannel, slackAuthor, slackMessage, slackUsername, slackIconEmoji)
+					sendSlack(slackWebhookUrl, slackChannel, slackAuthor, slackMessage, slackUsername, slackIconEmoji, message)
 				}
 			}
 		}
