@@ -6,7 +6,6 @@ allowed_addresses:
 allowed_users:
   - "john"
   - "doe"
-
 recheck_time: 30
 grace_time: 1800
 
@@ -22,3 +21,6 @@ slack:
   webhook_url: "https://hooks.slack.com/services/foo/bar/baz"
   channel: "#alerts"
   author: "Login Watcher"
+  message: "Not allowed login detected"
+  username: "abot"
+  icon_emoji: ":alien:"
