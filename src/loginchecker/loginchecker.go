@@ -15,21 +15,29 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+type configMail struct {
+	From       string   `yaml:"from,omitempty"`
+	FromName   string   `yaml:"from_name,omitempty"`
+	Subject    string   `yaml:"subject,omitempty"`
+	Recipients []string `yaml:"recipients,omitempty"`
+}
+
+type configSlack struct {
+	WebhookUrl string `yaml:"webhook_url,omitempty"`
+	Channel    string `yaml:"channel,omitempty"`
+	Author     string `yaml:"author,omitempty"`
+	Message    string `yaml:"message,omitempty"`
+	Username   string `yaml:"username,omitempty"`
+	IconEmoji  string `yaml:"icon_emoji,omitempty"`
+}
+
 type config struct {
-	Mailfrom         string   `yaml:"mail_from,omitempty"`
-	Mailfromname     string   `yaml:"mail_from_name,omitempty"`
-	Mailsubject      string   `yaml:"mail_subject,omitempty"`
-	Mailtos          []string `yaml:"mail_to,omitempty"`
-	Allowedaddresses []string `yaml:"allowed_addresses,omitempty"`
-	Allowedusers     []string `yaml:"allowed_users,omitempty"`
-	Rechecktime      int64    `yaml:"recheck_time,omitempty"`
-	Gracetime        int64    `yaml:"grace_time,omitempty"`
-	Slackwebhookurl  string   `yaml:"slack_webhook_url,omitempty"`
-	Slackchannel     string   `yaml:"slack_channel,omitempty"`
-	Slackauthor      string   `yaml:"slack_author,omitempty"`
-	Slackmessage     string   `yaml:"slack_message,omitempty"`
-	Slackusername    string   `yaml:"slack_username,omitempty"`
-	Slackiconemoji   string   `yaml:"slack_icon_emoji,omitempty"`
+	AllowedAddresses []string    `yaml:"allowed_addresses,omitempty"`
+	AllowedUsers     []string    `yaml:"allowed_users,omitempty"`
+	RecheckTime      int64       `yaml:"recheck_time,omitempty"`
+	GraceTime        int64       `yaml:"grace_time,omitempty"`
+	Mail             configMail  `yaml:"mail,omitempty"`
+	Slack            configSlack `yaml:"slack,omitempty"`
 }
 
 func (c *config) getConfig(configfile string) *config {
@@ -93,6 +101,7 @@ func isNotAllowedUser(user string, allowedUsers []string) bool {
 			return false
 		}
 	}
+
 	return true
 }
 
@@ -167,6 +176,8 @@ func main() {
 	)
 
 	hostName := hostname()
+	enableMail := true
+	enableSlack := true
 
 	configfile := "./config.yml"
 	if len(os.Args) > 1 {
@@ -174,6 +185,16 @@ func main() {
 		configfile = arg
 	}
 	config.getConfig(configfile)
+
+	if config.Mail.Recipients == nil || config.Mail.From == "" || config.Mail.FromName == "" || config.Mail.Subject == "" {
+		println("Alerting via email is turned off. If you want to enable email alerting, make sure you set the needed config params!")
+		enableMail = false
+	}
+
+	if config.Slack.WebhookUrl == "" || config.Slack.Channel == "" || config.Slack.Author == "" || config.Slack.Message == "" || config.Slack.Username == "" || config.Slack.IconEmoji == "" {
+		println("Alerting via slack is turned off. If you want to enable slack alerting, make sure you set the needed config params!")
+		enableSlack = false
+	}
 
 	logged := make(map[string]time.Time)
 	for {
@@ -190,12 +211,12 @@ func main() {
 
 			uniqeUser := username + address
 
-			if isNotAllowedIp(address, config.Allowedaddresses) || isNotAllowedUser(username, config.Allowedusers) {
+			if isNotAllowedIp(address, config.AllowedAddresses) || isNotAllowedUser(username, config.AllowedUsers) {
 				notify := false
 
 				timeDetected := time.Now()
 				if timeLogged, ok := logged[uniqeUser]; ok {
-					if timeDetected.Sub(timeLogged) > time.Duration(config.Gracetime) * time.Second {
+					if timeDetected.Sub(timeLogged) > time.Duration(config.GraceTime)*time.Second {
 						logged[uniqeUser] = timeDetected
 						notify = true
 					}
@@ -206,14 +227,21 @@ func main() {
 
 				if notify {
 					message := "Unauthorized access: User " + username + " is not allowed to access " + hostName + " from IP " + address + "!"
-					for _, alertMailto := range config.Mailtos {
-						sendMail(alertMailto, config.Mailfrom, config.Mailfromname, config.Mailsubject + " @ " + hostName, message)
+
+					if enableMail {
+						for _, alertMailto := range config.Mail.Recipients {
+							sendMail(alertMailto, config.Mail.From, config.Mail.FromName, config.Mail.Subject+" @ "+hostName, message)
+						}
 					}
-					sendSlack(config.Slackwebhookurl, config.Slackchannel, config.Slackauthor, config.Slackmessage + " @ " + hostName, config.Slackusername, config.Slackiconemoji, message)
+
+					if enableSlack {
+						sendSlack(config.Slack.WebhookUrl, config.Slack.Channel, config.Slack.Author, config.Slack.Message+" @ "+hostName, config.Slack.Username, config.Slack.IconEmoji, message)
+					}
+
 					println(message)
 				}
 			}
 		}
-		time.Sleep(time.Duration(config.Rechecktime) * time.Second)
+		time.Sleep(time.Duration(config.RecheckTime) * time.Second)
 	}
 }

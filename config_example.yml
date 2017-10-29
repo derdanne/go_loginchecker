@@ -1,10 +1,4 @@
 ---
-mail_from: "loginwatch@example.org"
-mail_from_name: "Login Alert"
-mail_subject: "Not allowed login detected"
-mail_to:
-  - "alert@example.org"
-  - "sms@example.org"
 allowed_addresses:
   - "192.168.0.0/24"
   - "192.168.2.0/24"
@@ -12,11 +6,19 @@ allowed_addresses:
 allowed_users:
   - "john"
   - "doe"
+
 recheck_time: 30
 grace_time: 1800
-slack_webhook_url: "https://hooks.slack.com/services/foo/bar/baz"
-slack_channel: "#alerts"
-slack_author: "Login Watcher"
-slack_message: "Not allowed login detected"
-slack_username: "abot"
-slack_icon_emoji: ":alien:"
+
+mail:
+  from: "loginwatch@example.org"
+  from_name: "Login Alert"
+  subject: "Not allowed login detected"
+  recipients:
+    - "alert@example.org"
+    - "sms@example.org"
+
+slack:
+  webhook_url: "https://hooks.slack.com/services/foo/bar/baz"
+  channel: "#alerts"
+  author: "Login Watcher"
