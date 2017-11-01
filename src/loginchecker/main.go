@@ -17,12 +17,12 @@ func main() {
 	enableSlack := true
 	users := createUsersSlice()
 
-	configfile := "./config.yml"
+	configFile := "./config.yml"
 	if len(os.Args) > 1 {
 		arg := os.Args[1]
-		configfile = arg
+		configFile = arg
 	}
-	config.getConfig(configfile)
+	config.getConfig(configFile)
 
 	if config.Mail.Recipients == nil ||
 		config.Mail.From == "" ||
@@ -33,7 +33,7 @@ func main() {
 		enableMail = false
 	}
 
-	if config.Slack.WebhookUrl == "" ||
+	if config.Slack.WebHookUrl == "" ||
 		config.Slack.Channel == "" ||
 		config.Slack.Author == "" ||
 		config.Slack.Message == "" ||
@@ -50,7 +50,7 @@ func main() {
 		messageBuffer.WriteString("Unauthorized user login(s):\n")
 
 		for _, user := range users {
-			if isNotAllowedUser(user.Username, config.AllowedUsers) || isNotAllowedIp(user.Hostname, config.AllowedAddresses) {
+			if isNotAllowedUser(user.Username, config.AllowedUsers) || isNotAllowedHost(user.Hostname, config.AllowedAddresses) {
 				if user.TimeDetected == user.TimeNotified || time.Now().Sub(user.TimeNotified) > time.Duration(config.GraceTime)*time.Second {
 					messageBuffer.WriteString("\n")
 					messageBuffer.WriteString("User ")
@@ -58,7 +58,7 @@ func main() {
 					messageBuffer.WriteString(" is not allowed to access this host from ")
 					messageBuffer.WriteString(user.Hostname)
 					messageBuffer.WriteString("!")
-					user.UpdateTimeNotified(time.Now())
+					user.updateTimeNotified(time.Now())
 					notify = true
 				}
 			}
@@ -68,9 +68,9 @@ func main() {
 			message := messageBuffer.String()
 			println(message)
 			if enableMail {
-				for _, alertMailto := range config.Mail.Recipients {
+				for _, alertMailTo := range config.Mail.Recipients {
 					sendMail(
-						alertMailto,
+						alertMailTo,
 						config.Mail.From,
 						config.Mail.FromName,
 						config.Mail.Subject+" on host "+host.Hostname,
@@ -80,7 +80,7 @@ func main() {
 			}
 			if enableSlack {
 				sendSlack(
-					config.Slack.WebhookUrl,
+					config.Slack.WebHookUrl,
 					config.Slack.Channel,
 					config.Slack.Author,
 					config.Slack.Message+" on host "+host.Hostname,

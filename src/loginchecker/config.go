@@ -14,7 +14,7 @@ type ConfigMail struct {
 }
 
 type ConfigSlack struct {
-	WebhookUrl string `yaml:"webhook_url,omitempty"`
+	WebHookUrl string `yaml:"webhook_url,omitempty"`
 	Channel    string `yaml:"channel,omitempty"`
 	Author     string `yaml:"author,omitempty"`
 	Message    string `yaml:"message,omitempty"`
@@ -31,18 +31,18 @@ type Config struct {
 	Slack            ConfigSlack `yaml:"slack,omitempty"`
 }
 
-func (c *Config) getConfig(configfile string) *Config {
-	yamlFile, readErr := ioutil.ReadFile(configfile)
+func (config *Config) getConfig(configFile string) *Config {
+	yamlFile, readErr := ioutil.ReadFile(configFile)
 	if readErr != nil {
 		log.Printf("yamlFile.Get err   #%v ", readErr)
 		panic(readErr)
 	}
 
-	yamlErr := yaml.Unmarshal(yamlFile, &c)
+	yamlErr := yaml.Unmarshal(yamlFile, &config)
 	if yamlErr != nil {
 		log.Fatalf("Unmarshal: %v", yamlErr)
 		panic(yamlErr)
 	}
 
-	return c
+	return config
 }

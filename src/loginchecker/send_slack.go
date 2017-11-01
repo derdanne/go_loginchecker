@@ -5,14 +5,14 @@ import (
 	"log"
 )
 
-func sendSlack(webhookUrl string, channel string, author string, message string, username string, iconEmoji string, attachementMessage string) {
+func sendSlack(webHookUrl string, channel string, author string, message string, username string, iconEmoji string, attachmentMessage string) {
 	client := &slack_incoming_webhooks.Client{
-		WebhookURL: webhookUrl,
+		WebhookURL: webHookUrl,
 	}
 
 	attachment := &slack_incoming_webhooks.Attachment{
 		AuthorName: author,
-		Text:       attachementMessage,
+		Text:       attachmentMessage,
 		Color:      "danger",
 	}
 

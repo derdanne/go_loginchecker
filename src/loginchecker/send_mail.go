@@ -7,24 +7,24 @@ import (
 	"strings"
 )
 
-func sendMail(recipient string, mailfrom string, mailfromname string, mailsubject string, mailbody string) {
-	var sendmailBuffer bytes.Buffer
-	sendmailBuffer.WriteString("Subject: ")
-	sendmailBuffer.WriteString(mailsubject)
-	sendmailBuffer.WriteString("\n")
-	sendmailBuffer.WriteString(mailbody)
-	sendmailBuffer.WriteString("\n.")
+func sendMail(recipient string, mailFrom string, mailFromName string, mailSubject string, mailBody string) {
+	var sendMailBuffer bytes.Buffer
+	sendMailBuffer.WriteString("Subject: ")
+	sendMailBuffer.WriteString(mailSubject)
+	sendMailBuffer.WriteString("\n")
+	sendMailBuffer.WriteString(mailBody)
+	sendMailBuffer.WriteString("\n.")
 
 	mail, lookErr := exec.LookPath("sendmail")
 	if lookErr != nil {
 		log.Print(lookErr)
 	}
 
-	args := []string{"-t", "-f", mailfrom, "-F", mailfromname, recipient}
+	args := []string{"-t", "-f", mailFrom, "-F", mailFromName, recipient}
 
-	sendmail := exec.Command(mail, args...)
-	sendmail.Stdin = strings.NewReader(sendmailBuffer.String())
-	execErr := sendmail.Run()
+	sendMail := exec.Command(mail, args...)
+	sendMail.Stdin = strings.NewReader(sendMailBuffer.String())
+	execErr := sendMail.Run()
 	if execErr != nil {
 		log.Print(execErr)
 	}

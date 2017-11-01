@@ -2,7 +2,16 @@ package main
 
 import "net"
 
-func isNotAllowedIp(hostname string, allowedNetworks []string) bool {
+func isNotAllowedUser(username string, allowedUsers []string) bool {
+	for _, allowedUser := range allowedUsers {
+		if allowedUser == username {
+			return false
+		}
+	}
+	return true
+}
+
+func isNotAllowedHost(hostname string, allowedNetworks []string) bool {
 	parsedAddress := net.ParseIP(hostname)
 	if parsedAddress == nil {
 		for _, allowedHostname := range allowedNetworks {
@@ -19,15 +28,6 @@ func isNotAllowedIp(hostname string, allowedNetworks []string) bool {
 					return false
 				}
 			}
-		}
-	}
-	return true
-}
-
-func isNotAllowedUser(username string, allowedUsers []string) bool {
-	for _, allowedUser := range allowedUsers {
-		if allowedUser == username {
-			return false
 		}
 	}
 	return true
