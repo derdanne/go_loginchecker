@@ -61,6 +61,7 @@ func detectUser(userSlice []*User) []*User {
 			userSlice = append(userSlice, &User{Username: user.Username, Hostname: user.Hostname, TimeDetected: user.TimeDetected, TimeNotified: user.TimeNotified})
 		}
 	}
+	tmpUserSlice = nil
 	return userSlice
 }
 
