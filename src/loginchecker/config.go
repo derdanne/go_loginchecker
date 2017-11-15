@@ -23,10 +23,10 @@ type ConfigSlack struct {
 }
 
 type Config struct {
-	AllowedAddresses []string    `yaml:"allowed_addresses,omitempty"`
-	AllowedUsers     []string    `yaml:"allowed_users,omitempty"`
-	RecheckTime      int64       `yaml:"recheck_time,omitempty"`
-	GraceTime        int64       `yaml:"grace_time,omitempty"`
+	AllowedAddresses []string    `yaml:"allowed_addresses"`
+	AllowedUsers     []string    `yaml:"allowed_users"`
+	RecheckTime      int64       `yaml:"recheck_time"`
+	GraceTime        int64       `yaml:"grace_time"`
 	Mail             ConfigMail  `yaml:"mail,omitempty"`
 	Slack            ConfigSlack `yaml:"slack,omitempty"`
 }
