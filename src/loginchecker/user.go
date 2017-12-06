@@ -5,6 +5,7 @@ import (
 	"os/exec"
 	"strings"
 	"time"
+	"os"
 )
 
 type User struct {
@@ -33,6 +34,7 @@ func detectUser(userSlice []*User) []*User {
 
 	args := []string{"-u"}
 
+	os.Setenv("LANG", "en_US.UTF-8")
 	whoOut, execErr := exec.Command(WhoCmd, args...).Output()
 	if execErr != nil {
 		panic(execErr)
