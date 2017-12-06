@@ -43,7 +43,7 @@ func detectUser(userSlice []*User) []*User {
 		whoIsLoggedIn := strings.Fields(scanner.Text())
 		username := whoIsLoggedIn[0]
 		hostname := strings.Trim(whoIsLoggedIn[6], "(,)")
-		if strings.Contains(hostname, ":S") {
+		if strings.Contains(hostname, ":") {
 			hostname = string(strings.Split(hostname, ":")[0])
 		}
 		timestamp := time.Now()
@@ -84,5 +84,3 @@ func removeUserFromSlice(username string, hostname string, userSlice []*User) []
 	}
 	return userSlice[:k]
 }
-
-
