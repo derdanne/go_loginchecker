@@ -44,7 +44,12 @@ func detectUser(userSlice []*User) []*User {
 	for scanner.Scan() {
 		whoIsLoggedIn := strings.Fields(scanner.Text())
 		username := whoIsLoggedIn[0]
-		hostname := strings.Trim(whoIsLoggedIn[6], "(,)")
+		hostname := ""
+		if strings.Contains(whoIsLoggedIn[1], "tty") {
+		    hostname = "console"
+		}	else {
+		    hostname = strings.Trim(whoIsLoggedIn[6], "(,)")
+		}
 		if strings.Contains(hostname, ":") {
 			hostname = string(strings.Split(hostname, ":")[0])
 		}
